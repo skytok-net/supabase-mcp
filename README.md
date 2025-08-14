@@ -136,12 +136,15 @@ Note that some features have limited functionality in self-hosted mode:
 - Branching is not supported
 - Some storage and edge function features may have limited functionality
 
-### Option 3: Using the Fork with Self-Hosted Support
+### Option 3: Installing from Git Repository
 
-If you want to use the version with self-hosted support directly from the repository rather than the published npm package, you can use the following configuration:
+If you want to use the latest development version or a specific branch directly from the repository, you can install via git. The repository includes automatic build scripts that will compile the TypeScript source code during installation.
 
-#### Using SSH (if you have SSH access to GitHub):
+> **Note:** Git-based installations take longer than npm installations because they need to build the source code. The build process runs automatically during `npm install`.
 
+#### Using GitHub shorthand (recommended):
+
+For Supabase Cloud:
 ```json
 {
   "mcpServers": {
@@ -149,7 +152,27 @@ If you want to use the version with self-hosted support directly from the reposi
       "command": "npx",
       "args": [
         "-y",
-        "github:skytok-net/supabase-mcp",
+        "github:owner/repo-name",
+        "--read-only",
+        "--project-ref=<project-ref>"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "<personal-access-token>"
+      }
+    }
+  }
+}
+```
+
+For self-hosted Supabase:
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:owner/repo-name",
         "--self-hosted",
         "--host-url=<your-supabase-url>",
         "--service-role-key=<service-role-key>",
@@ -160,7 +183,7 @@ If you want to use the version with self-hosted support directly from the reposi
 }
 ```
 
-#### Using HTTPS:
+#### Using HTTPS URL:
 
 ```json
 {
@@ -169,12 +192,13 @@ If you want to use the version with self-hosted support directly from the reposi
       "command": "npx",
       "args": [
         "-y",
-        "https://github.com/skytok-net/supabase-mcp.git",
-        "--self-hosted",
-        "--host-url=<your-supabase-url>",
-        "--service-role-key=<service-role-key>",
-        "--read-only"
-      ]
+        "https://github.com/owner/repo-name.git",
+        "--read-only",
+        "--project-ref=<project-ref>"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "<personal-access-token>"
+      }
     }
   }
 }
@@ -182,20 +206,16 @@ If you want to use the version with self-hosted support directly from the reposi
 
 #### Using a specific branch or commit:
 
-To use a specific branch, tag, or commit, you can append it after the repository URL:
+To use a specific branch, tag, or commit, append it after the repository reference:
 
 ```
-github:skytok-net/supabase-mcp#main
-github:skytok-net/supabase-mcp#feature/selfhosted
-github:skytok-net/supabase-mcp#v0.4.6-self-hosted
-github:skytok-net/supabase-mcp#a1b2c3d  // commit hash
+github:owner/repo-name#main
+github:owner/repo-name#feature-branch
+github:owner/repo-name#v1.0.0
+github:owner/repo-name#a1b2c3d  // commit hash
 ```
 
-#### Using the `feature/selfhosted` branch:
-
-The `feature/selfhosted` branch contains the latest self-hosted improvements and fixes. To use this specific branch in your MCP configuration:
-
-**SSH method:**
+Example with specific branch:
 ```json
 {
   "mcpServers": {
@@ -203,39 +223,63 @@ The `feature/selfhosted` branch contains the latest self-hosted improvements and
       "command": "npx",
       "args": [
         "-y",
-        "github:skytok-net/supabase-mcp#feature/selfhosted",
-        "--self-hosted",
-        "--host-url=<your-supabase-url>",
-        "--service-role-key=<service-role-key>",
-        "--read-only"
-      ]
-    }
-  }
-}
-```
-
-**HTTPS method:**
-```json
-{
-  "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "https://github.com/skytok-net/supabase-mcp.git#feature/selfhosted",
-        "--self-hosted",
-        "--host-url=<your-supabase-url>",
-        "--service-role-key=<service-role-key>",
-        "--read-only"
-      ]
+        "github:owner/repo-name#main",
+        "--read-only",
+        "--project-ref=<project-ref>"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "<personal-access-token>"
+      }
     }
   }
 }
 ```
 
 Replace:
-- `<your-supabase-url>` with your self-hosted Supabase URL
-- `<service-role-key>` with your service role key
+- `owner/repo-name` with the actual GitHub repository
+- `<project-ref>` with your Supabase project reference
+- `<personal-access-token>` with your Supabase personal access token
+- `<your-supabase-url>` with your self-hosted Supabase URL (for self-hosted)
+- `<service-role-key>` with your service role key (for self-hosted)
+
+#### Build Process
+
+When installing from git, the following happens automatically:
+1. npm downloads the repository source code
+2. npm runs `npm install` to install dependencies
+3. npm runs the `prepare` script which builds all packages
+4. The built executable files are available in `packages/*/dist/` folders
+5. The MCP server is ready to use
+
+If the build fails, ensure you have Node.js 18+ installed and try running the installation again.
+
+#### Differences from NPM Installation
+
+When installing from git repositories, there are some important differences compared to installing from npm:
+
+**Performance:**
+- Git installations are slower because they need to compile TypeScript source code
+- First-time installation may take 30-60 seconds depending on your system
+- NPM installations are faster because they use pre-built packages
+
+**Dependencies:**
+- Git installations require Node.js 18+ and npm to be available
+- Build tools (TypeScript, tsup) are installed automatically as dev dependencies
+- All workspace dependencies are resolved and built in the correct order
+
+**Reliability:**
+- Git installations depend on the build process succeeding
+- Network issues during git clone or npm install can cause failures
+- NPM installations are more reliable as they use pre-tested packages
+
+**Use Cases:**
+- Use git installation for: latest development versions, specific branches/commits, contributing to development
+- Use npm installation for: production deployments, stable releases, faster setup
+
+**Troubleshooting:**
+- If installation fails, try: `npm cache clean --force` then retry
+- For build errors, ensure you have sufficient disk space and memory
+- Check that your Node.js version is 18 or higher: `node --version`
 
 If you are on Windows, you will need to [prefix the command](#windows). If your MCP client doesn't accept JSON, the direct CLI command is:
 
