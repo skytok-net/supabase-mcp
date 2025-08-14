@@ -1,0 +1,33 @@
+{
+  "name": "@supabase/edge-function-manager",
+  "version": "1.0.0",
+  "description": "Edge function management service for self-hosted Supabase instances",
+  "main": "functions/supabase-function-manager/index.ts",
+  "scripts": {
+    "deploy": "./scripts/deploy.sh",
+    "setup": "./scripts/setup.sh"
+  },
+  "keywords": [
+    "supabase",
+    "edge-functions",
+    "deno",
+    "serverless",
+    "self-hosted"
+  ],
+  "author": "Supabase",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supabase/supabase-mcp.git",
+    "directory": "packages/supabase-function-manager"
+  },
+  "files": [
+    "functions/",
+    "sql/",
+    "scripts/",
+    "README.md"
+  ],
+  "engines": {
+    "deno": ">=1.30.0"
+  }
+}

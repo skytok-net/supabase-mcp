@@ -166,4 +166,13 @@ When connecting to self-hosted Supabase instances:
 2. Provide the URL to your instance with `--host-url=<your-supabase-url>`
 3. Authenticate using your service role key with `--service-role-key=<your-key>`
 4. For better performance with database operations, use `--pg-connection=<connection-string>`
-5. Be aware that certain features (branching, organization management) are unavailable in self-hosted mode
+5. For remote edge function management, install the supabase-function-manager (see `docs/SELF_HOSTED_FUNCTIONS.md`)
+6. Be aware that certain features (branching, organization management) are unavailable in self-hosted mode
+
+### Edge Function Management
+
+Self-hosted Supabase instances do not expose Management API endpoints for edge functions. The MCP server now uses an edge function management service approach:
+
+- **Without management service**: Edge function operations return empty results with helpful instructions
+- **With management service**: Full remote edge function management via the `supabase-function-manager` edge function
+- **See documentation**: Detailed setup instructions are available in `docs/SELF_HOSTED_FUNCTIONS.md`

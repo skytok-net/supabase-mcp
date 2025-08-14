@@ -95,6 +95,42 @@ Optional parameters for self-hosted mode:
 - `--read-only`: Recommended for security, especially when connecting to production databases.
 - `--features`: Used to specify which tool groups to enable. See [feature groups](#feature-groups).
 
+#### 3. Setup required database function (if not using --pg-connection)
+
+If you're not providing a direct PostgreSQL connection via `--pg-connection`, you'll need to create the `exec_sql` function in your self-hosted Supabase database. Connect to your PostgreSQL database and run the following SQL:
+
+```sql
+CREATE OR REPLACE FUNCTION public.exec_sql(query TEXT, read_only BOOLEAN DEFAULT false)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    result JSON;
+BEGIN
+    -- If read_only is true, set the transaction to read-only
+    IF read_only THEN
+        SET TRANSACTION READ ONLY;
+    END IF;
+    
+    -- Execute the query and return the result as JSON
+    EXECUTE 'SELECT array_to_json(array_agg(row_to_json(t))) FROM (' || query || ') t' INTO result;
+    
+    -- Return empty array if no results
+    IF result IS NULL THEN
+        result := '[]'::JSON;
+    END IF;
+    
+    RETURN result;
+END;
+$$;
+
+-- Grant execute permission to the service role
+GRANT EXECUTE ON FUNCTION public.exec_sql(TEXT, BOOLEAN) TO service_role;
+```
+
+This function is required for the MCP server to execute SQL queries via the REST API when no direct PostgreSQL connection is available.
+
 Note that some features have limited functionality in self-hosted mode:
 - Organization and project management features are not available
 - Branching is not supported
@@ -150,8 +186,51 @@ To use a specific branch, tag, or commit, you can append it after the repository
 
 ```
 github:skytok-net/supabase-mcp#main
+github:skytok-net/supabase-mcp#feature/selfhosted
 github:skytok-net/supabase-mcp#v0.4.6-self-hosted
 github:skytok-net/supabase-mcp#a1b2c3d  // commit hash
+```
+
+#### Using the `feature/selfhosted` branch:
+
+The `feature/selfhosted` branch contains the latest self-hosted improvements and fixes. To use this specific branch in your MCP configuration:
+
+**SSH method:**
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:skytok-net/supabase-mcp#feature/selfhosted",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
+```
+
+**HTTPS method:**
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "https://github.com/skytok-net/supabase-mcp.git#feature/selfhosted",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
 ```
 
 Replace:
