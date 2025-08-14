@@ -107,16 +107,43 @@ export function createSelfHostedPlatform(
       }
 
       // Fall back to REST API if PG connection failed or isn't available
-      const { data, error } = await supabase.rpc('exec_sql', {
-        query,
-        read_only: read_only || false
-      });
-
-      if (error) {
-        throw new Error(`Failed to execute SQL query: ${error.message}`);
+      try {
+        console.log('Executing SQL query via RPC:', query);
+        
+        // For complex queries (like those with CTEs), we need to wrap the query differently
+        const isComplexQuery = query.trim().toLowerCase().startsWith('with');
+        let modifiedQuery = query;
+        
+        if (isComplexQuery) {
+          // For complex queries with CTEs, we need to execute them directly
+          // and transform the results client-side
+          const { data, error } = await supabase.rpc('exec_sql', {
+            query: `SELECT json_agg(t) FROM (${query}) t`,
+            read_only: read_only || false
+          });
+          
+          if (error) {
+            throw new Error(`Failed to execute SQL query: ${error.message}`);
+          }
+          
+          return (data?.[0]?.json_agg || []) as unknown as T[];
+        } else {
+          // Use the standard approach for simple queries
+          const { data, error } = await supabase.rpc('exec_sql', {
+            query,
+            read_only: read_only || false
+          });
+          
+          if (error) {
+            throw new Error(`Failed to execute SQL query: ${error.message}`);
+          }
+          
+          return data as unknown as T[];
+        }
+      } catch (error) {
+        console.error('Error executing SQL via RPC:', error);
+        throw error;
       }
-
-      return data as unknown as T[];
     },
 
     async listMigrations(projectId: string): Promise<Migration[]> {
