@@ -1,14 +1,24 @@
 {
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "npm run build --workspace @supabase/mcp-utils --workspace @supabase/mcp-server-supabase",
     "test": "npm run test --workspace @supabase/mcp-utils --workspace @supabase/mcp-server-supabase",
     "test:coverage": "npm run test:coverage --workspace @supabase/mcp-server-supabase",
     "format": "biome check --write .",
-    "format:check": "biome check ."
+    "format:check": "biome check .",
+    "mcp": "mcp-cli",
+    "postinstall": "mkdir -p ~/.config/mcp && ln -sf $(pwd)/mcp-config.json ~/.config/mcp/mcp-config.json",
+    "inspect": "SUPABASE_ACCESS_TOKEN=sbp_74147f9923c8cc2580e51a89e761df9b43839cbe npx @modelcontextprotocol/inspector node packages/mcp-server-supabase/dist/transports/stdio.js --project-ref=vbcdbpkztpdrxpikzwbj"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@types/pg": "^8.15.5",
     "supabase": "^2.1.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.55.0",
+    "pg": "^8.16.3"
   }
 }

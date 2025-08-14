@@ -4,6 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { parseArgs } from 'node:util';
 import packageJson from '../../package.json' with { type: 'json' };
 import { createSupabaseApiPlatform } from '../platform/api-platform.js';
+import { createSelfHostedPlatform } from '../platform/self-hosted-platform.js';
 import { createSupabaseMcpServer } from '../server.js';
 import { parseList } from './util.js';
 
@@ -18,6 +19,10 @@ async function main() {
       ['api-url']: apiUrl,
       ['version']: showVersion,
       ['features']: cliFeatures,
+      ['self-hosted']: selfHosted,
+      ['host-url']: hostUrl,
+      ['service-role-key']: serviceRoleKey,
+      ['pg-connection']: pgConnection,
     },
   } = parseArgs({
     options: {
@@ -40,6 +45,19 @@ async function main() {
       ['features']: {
         type: 'string',
       },
+      ['self-hosted']: {
+        type: 'boolean',
+        default: false,
+      },
+      ['host-url']: {
+        type: 'string',
+      },
+      ['service-role-key']: {
+        type: 'string',
+      },
+      ['pg-connection']: {
+        type: 'string',
+      },
     },
   });
 
@@ -48,21 +66,43 @@ async function main() {
     process.exit(0);
   }
 
-  const accessToken = cliAccessToken ?? process.env.SUPABASE_ACCESS_TOKEN;
+  let platform;
 
-  if (!accessToken) {
-    console.error(
-      'Please provide a personal access token (PAT) with the --access-token flag or set the SUPABASE_ACCESS_TOKEN environment variable'
-    );
-    process.exit(1);
+  if (selfHosted) {
+    // For self-hosted instances, we need either host URL and service role key
+    if (!hostUrl) {
+      console.error('Please provide a host URL with the --host-url flag when using --self-hosted');
+      process.exit(1);
+    }
+    
+    if (!serviceRoleKey) {
+      console.error('Please provide a service role key with the --service-role-key flag when using --self-hosted');
+      process.exit(1);
+    }
+
+    platform = createSelfHostedPlatform({
+      hostUrl,
+      serviceRoleKey,
+      pgConnection,
+    });
+  } else {
+    // Cloud Supabase instances require an access token
+    const accessToken = cliAccessToken ?? process.env.SUPABASE_ACCESS_TOKEN;
+
+    if (!accessToken) {
+      console.error(
+        'Please provide a personal access token (PAT) with the --access-token flag or set the SUPABASE_ACCESS_TOKEN environment variable'
+      );
+      process.exit(1);
+    }
+
+    platform = createSupabaseApiPlatform({
+      accessToken,
+      apiUrl,
+    });
   }
 
   const features = cliFeatures ? parseList(cliFeatures) : undefined;
-
-  const platform = createSupabaseApiPlatform({
-    accessToken,
-    apiUrl,
-  });
 
   const server = createSupabaseMcpServer({
     platform,

@@ -7,6 +7,9 @@
   "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
   "sideEffects": false,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "build": "tsup --clean",
     "prepublishOnly": "npm run build",
@@ -39,9 +42,11 @@
     "@mjackson/multipart-parser": "^0.10.1",
     "@modelcontextprotocol/sdk": "^1.11.0",
     "@supabase/mcp-utils": "0.2.1",
+    "@supabase/supabase-js": "^2.39.3",
     "common-tags": "^1.8.2",
     "graphql": "^16.11.0",
     "openapi-fetch": "^0.13.5",
+    "pg": "^8.11.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {

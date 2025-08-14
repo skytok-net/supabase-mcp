@@ -1,0 +1,15 @@
+{
+  "servers": [
+    {
+      "name": "supabase",
+      "command": "node",
+      "args": [
+        "/Users/gqadonis/Projects/prometheus/brius/supabase-mcp/packages/mcp-server-supabase/dist/transports/stdio.js",
+        "--project-ref=vbcdbpkztpdrxpikzwbj"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_74147f9923c8cc2580e51a89e761df9b43839cbe"
+      }
+    }
+  ]
+}

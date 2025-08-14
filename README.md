@@ -18,13 +18,15 @@ If you don't have Node.js installed, you can download it from [nodejs.org](https
 
 ## Setup
 
-### 1. Personal access token (PAT)
+### Option 1: Connecting to Supabase Cloud
+
+#### 1. Personal access token (PAT)
 
 First, go to your [Supabase settings](https://supabase.com/dashboard/account/tokens) and create a personal access token. Give it a name that describes its purpose, like "Cursor MCP Server".
 
 This will be used to authenticate the MCP server with your Supabase account. Make sure to copy the token, as you won't be able to see it again.
 
-### 2. Configure MCP client
+#### 2. Configure MCP client for Supabase Cloud
 
 Next, configure your MCP client (such as Cursor) to use this server. Most MCP clients store the configuration as JSON in the following format:
 
@@ -49,11 +51,112 @@ Next, configure your MCP client (such as Cursor) to use this server. Most MCP cl
 
 Replace `<personal-access-token>` with the token you created in step 1. Alternatively you can omit `SUPABASE_ACCESS_TOKEN` in this config and instead set it globally on your machine. This allows you to keep your token out of version control if you plan on committing this configuration to a repository.
 
-The following options are available:
+The following options are available for Supabase Cloud:
 
 - `--read-only`: Used to restrict the server to read-only queries. Recommended by default. See [read-only mode](#read-only-mode).
 - `--project-ref`: Used to scope the server to a specific project. Recommended by default. If you omit this, the server will have access to all projects in your Supabase account. See [project scoped mode](#project-scoped-mode).
 - `--features`: Used to specify which tool groups to enable. See [feature groups](#feature-groups).
+
+### Option 2: Connecting to Self-Hosted Supabase
+
+#### 1. Get your service role key
+
+For self-hosted Supabase instances, you'll need your service role key from your `.env` file. This key starts with `supabase_admin_` and has admin privileges to your database.
+
+#### 2. Configure MCP client for self-hosted Supabase
+
+Configure your MCP client to use this server with self-hosted mode:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
+```
+
+Replace:
+- `<your-supabase-url>` with your self-hosted Supabase URL (e.g., `http://localhost:54321`)
+- `<service-role-key>` with your service role key
+
+Optional parameters for self-hosted mode:
+
+- `--pg-connection`: A PostgreSQL connection string for direct database access. This can provide better performance and support for features that require direct database access.
+- `--read-only`: Recommended for security, especially when connecting to production databases.
+- `--features`: Used to specify which tool groups to enable. See [feature groups](#feature-groups).
+
+Note that some features have limited functionality in self-hosted mode:
+- Organization and project management features are not available
+- Branching is not supported
+- Some storage and edge function features may have limited functionality
+
+### Option 3: Using the Fork with Self-Hosted Support
+
+If you want to use the version with self-hosted support directly from the repository rather than the published npm package, you can use the following configuration:
+
+#### Using SSH (if you have SSH access to GitHub):
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:skytok-net/supabase-mcp",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
+```
+
+#### Using HTTPS:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "https://github.com/skytok-net/supabase-mcp.git",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
+```
+
+#### Using a specific branch or commit:
+
+To use a specific branch, tag, or commit, you can append it after the repository URL:
+
+```
+github:skytok-net/supabase-mcp#main
+github:skytok-net/supabase-mcp#v0.4.6-self-hosted
+github:skytok-net/supabase-mcp#a1b2c3d  // commit hash
+```
+
+Replace:
+- `<your-supabase-url>` with your self-hosted Supabase URL
+- `<service-role-key>` with your service role key
 
 If you are on Windows, you will need to [prefix the command](#windows). If your MCP client doesn't accept JSON, the direct CLI command is:
 
@@ -299,6 +402,42 @@ npm install --ignore-scripts
 
 > [!NOTE]
 > On recent versions of MacOS, you may have trouble installing the `libpg-query` transient dependency without the `--ignore-scripts` flag.
+
+### Using the local build
+
+If you want to use the locally built version of the server, you can use the `mcp-config.json` file to configure your MCP client. This is useful for development and testing.
+
+Create a `mcp-config.json` file in the root of the project with the following content, replacing the placeholder values with your project reference and access token:
+
+```json
+{
+  "servers": [
+    {
+      "name": "supabase",
+      "command": "node",
+      "args": [
+        "packages/mcp-server-supabase/dist/transports/stdio.js",
+        "--project-ref=<project-ref>"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "<personal-access-token>"
+      }
+    }
+  ]
+}
+```
+
+Your MCP client will automatically detect and use this configuration.
+
+### Testing with the Inspector
+
+To test your local server with the MCP Inspector, you can use the `inspect` script:
+
+```shell
+npm run inspect
+```
+
+This will launch the inspector and connect it to your local server, allowing you to test its functionality in a web-based UI.
 
 ## License
 
