@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { Client } from 'pg';
-import { z } from 'zod';
 import type { InitData } from '@supabase/mcp-utils';
 import packageJson from '../../package.json' with { type: 'json' };
 import type {
@@ -233,54 +232,95 @@ export function createSelfHostedPlatform(
       throw new Error('Restoring projects is not supported in self-hosted mode');
     },
 
-    // Edge functions
+    // Edge functions - Use edge function management service if available
     async listEdgeFunctions(): Promise<EdgeFunction[]> {
-      // Note: supabase-js v2 doesn't have functions.list() method
-      // This is a workaround until we can update to v3
       try {
-        // @ts-ignore - Handling this dynamically since it might exist in some versions
-        const result = await supabase.functions.list();
-        const { data, error } = result;
+        // Try to use the supabase-function-manager edge function
+        const response = await fetch(`${hostUrl}/functions/v1/supabase-function-manager/functions`, {
+          headers: {
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
-        if (error) {
-          throw new Error(`Failed to list edge functions: ${error.message}`);
+        if (response.ok) {
+          return await response.json();
         }
         
-        if (!data) {
+        // If the management service is not available, check if we should return an empty list or error
+        if (response.status === 404) {
+          console.log('Edge function management service not deployed. Install supabase-function-manager to enable remote function management.');
+          console.log('See docs/SELF_HOSTED_FUNCTIONS.md for setup instructions.');
           return [];
         }
         
-        // Convert the function data to the expected format
-        return data.map((fn: any) => ({
-          id: fn.id,
-          slug: fn.slug,
-          name: fn.name,
-          status: fn.status,
-          version: fn.version,
-          verify_jwt: fn.verify_jwt,
-          created_at: fn.created_at ? Date.parse(fn.created_at) : undefined,
-          updated_at: fn.updated_at ? Date.parse(fn.updated_at) : undefined,
-          files: [] // Files need to be fetched separately
-        }));
-      } catch (e) {
-        console.error('Error listing functions:', e);
-        return [];
+        throw new Error(`Failed to list functions: ${response.statusText}`);
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.log('Edge function management service not available. Install supabase-function-manager to enable remote function management.');
+          console.log('See docs/SELF_HOSTED_FUNCTIONS.md for setup instructions.');
+          return [];
+        }
+        throw error;
       }
     },
 
     async getEdgeFunction(projectId: string, functionSlug: string): Promise<EdgeFunction> {
-      // There's no direct API to get a function with its code
-      // We'd need to download the function code manually
-      throw new Error('Getting edge function details is not fully supported in self-hosted mode');
+      try {
+        const response = await fetch(
+          `${hostUrl}/functions/v1/supabase-function-manager/functions/${functionSlug}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error(`Edge function '${functionSlug}' not found`);
+          }
+          throw new Error(`Failed to get function: ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new Error('Edge function management service not available. Install supabase-function-manager to enable remote function management. See docs/SELF_HOSTED_FUNCTIONS.md for setup instructions.');
+        }
+        throw error;
+      }
     },
 
     async deployEdgeFunction(
       projectId: string,
       options: DeployEdgeFunctionOptions
     ): Promise<Omit<EdgeFunction, 'files'>> {
-      // Self-hosted edge function deployment requires building a ZIP file
-      // This is complex and would require additional dependencies
-      throw new Error('Deploying edge functions via MCP is not supported in self-hosted mode');
+      try {
+        const response = await fetch(`${hostUrl}/functions/v1/supabase-function-manager/functions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(options)
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Edge function management service not available. Install supabase-function-manager to enable remote function deployment. See docs/SELF_HOSTED_FUNCTIONS.md for setup instructions.');
+          }
+          throw new Error(`Failed to deploy function: ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new Error('Edge function management service not available. Install supabase-function-manager to enable remote function deployment. See docs/SELF_HOSTED_FUNCTIONS.md for setup instructions.');
+        }
+        throw error;
+      }
     },
 
     // Debugging
