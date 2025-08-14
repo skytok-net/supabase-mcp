@@ -150,8 +150,51 @@ To use a specific branch, tag, or commit, you can append it after the repository
 
 ```
 github:skytok-net/supabase-mcp#main
+github:skytok-net/supabase-mcp#feature/selfhosted
 github:skytok-net/supabase-mcp#v0.4.6-self-hosted
 github:skytok-net/supabase-mcp#a1b2c3d  // commit hash
+```
+
+#### Using the `feature/selfhosted` branch:
+
+The `feature/selfhosted` branch contains the latest self-hosted improvements and fixes. To use this specific branch in your MCP configuration:
+
+**SSH method:**
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "github:skytok-net/supabase-mcp#feature/selfhosted",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
+```
+
+**HTTPS method:**
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "https://github.com/skytok-net/supabase-mcp.git#feature/selfhosted",
+        "--self-hosted",
+        "--host-url=<your-supabase-url>",
+        "--service-role-key=<service-role-key>",
+        "--read-only"
+      ]
+    }
+  }
+}
 ```
 
 Replace:
